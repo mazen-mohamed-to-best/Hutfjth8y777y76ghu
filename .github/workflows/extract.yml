@@ -1,0 +1,47 @@
+name: Extract Full Archive
+
+on:
+  workflow_dispatch:
+
+jobs:
+  extract:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Find archive file
+        run: |
+          set -e
+          ARCHIVE=$(find . -type f \( -name "*.tar.gz" -o -name "*.tgz" -o -name "*.zip" \) | head -n 1)
+          if [ -z "$ARCHIVE" ]; then
+            echo "No archive file found"
+            exit 1
+          fi
+          echo "ARCHIVE=$ARCHIVE" >> $GITHUB_ENV
+          echo "Found archive: $ARCHIVE"
+
+      - name: Extract archive completely
+        run: |
+          set -e
+          mkdir -p extracted
+
+          if [[ "$ARCHIVE" == *.tar.gz || "$ARCHIVE" == *.tgz ]]; then
+            tar -xzf "$ARCHIVE" -C extracted
+          elif [[ "$ARCHIVE" == *.zip ]]; then
+            unzip -q "$ARCHIVE" -d extracted
+          else
+            echo "Unsupported archive format: $ARCHIVE"
+            exit 1
+          fi
+
+      - name: Show extracted files
+        run: |
+          find extracted -type f | sort
+
+      - name: Upload extracted files
+        uses: actions/upload-artifact@v4
+        with:
+          name: extracted-files
+          path: extracted/
