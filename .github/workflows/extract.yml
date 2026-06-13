@@ -1,7 +1,12 @@
-name: Extract Full Archive
+name: Extract Archive
 
 on:
   workflow_dispatch:
+    inputs:
+      archive_path:
+        description: "Path to archive file inside the repo"
+        required: true
+        default: "to-best-flutter.tar.gz"
 
 jobs:
   extract:
@@ -11,33 +16,34 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Find archive file
+      - name: Verify archive exists
         run: |
           set -e
-          ARCHIVE=$(find . -type f \( -name "*.tar.gz" -o -name "*.tgz" -o -name "*.zip" \) | head -n 1)
-          if [ -z "$ARCHIVE" ]; then
-            echo "No archive file found"
+          if [ ! -f "${{ github.event.inputs.archive_path }}" ]; then
+            echo "Archive not found: ${{ github.event.inputs.archive_path }}"
             exit 1
           fi
-          echo "ARCHIVE=$ARCHIVE" >> $GITHUB_ENV
-          echo "Found archive: $ARCHIVE"
+          echo "Archive found."
 
-      - name: Extract archive completely
+      - name: Extract archive
         run: |
           set -e
           mkdir -p extracted
 
-          if [[ "$ARCHIVE" == *.tar.gz || "$ARCHIVE" == *.tgz ]]; then
-            tar -xzf "$ARCHIVE" -C extracted
-          elif [[ "$ARCHIVE" == *.zip ]]; then
-            unzip -q "$ARCHIVE" -d extracted
+          FILE="${{ github.event.inputs.archive_path }}"
+
+          if [[ "$FILE" == *.tar.gz || "$FILE" == *.tgz ]]; then
+            tar -xzf "$FILE" -C extracted
+          elif [[ "$FILE" == *.zip ]]; then
+            unzip -q "$FILE" -d extracted
           else
-            echo "Unsupported archive format: $ARCHIVE"
+            echo "Unsupported archive format: $FILE"
             exit 1
           fi
 
       - name: Show extracted files
         run: |
+          echo "Extracted files:"
           find extracted -type f | sort
 
       - name: Upload extracted files
