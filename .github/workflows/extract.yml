@@ -1,0 +1,29 @@
+name: Extract Archive
+
+on:
+  workflow_dispatch:
+
+jobs:
+  extract:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check archive exists
+        run: |
+          test -f to-best-flutter.tar.gz
+
+      - name: Extract archive
+        run: |
+          mkdir -p extracted
+          tar -xzf to-best-flutter.tar.gz -C extracted
+
+      - name: Show files
+        run: find extracted -type f | sort
+
+      - name: Upload extracted files
+        uses: actions/upload-artifact@v4
+        with:
+          name: extracted-files
+          path: extracted/
